@@ -247,12 +247,13 @@ export type NavigationFunctionResult = {
 };
 
 /**
- * Validates that function arguments match expected types.
+ * Validates and normalizes function arguments.
+ * More forgiving validation that normalizes out-of-range values rather than rejecting them.
  *
  * @param functionName - Name of the function being called
- * @param args - Arguments to validate
+ * @param args - Arguments to validate (will be mutated to normalize values)
  * @returns true if arguments are valid
- * @throws {Error} If arguments are invalid
+ * @throws {Error} If arguments are fundamentally invalid (wrong types)
  */
 export function validateFunctionArgs(functionName: NavigationFunctionName, args: unknown): boolean {
   if (typeof args !== "object" || args === null) {
@@ -269,12 +270,10 @@ export function validateFunctionArgs(functionName: NavigationFunctionName, args:
       if (typeof argsObj.pitch_degrees !== "number") {
         throw new Error("pan_camera requires pitch_degrees as a number");
       }
-      if (argsObj.heading_degrees < 0 || argsObj.heading_degrees > 360) {
-        throw new Error("heading_degrees must be between 0 and 360");
-      }
-      if (argsObj.pitch_degrees < -90 || argsObj.pitch_degrees > 90) {
-        throw new Error("pitch_degrees must be between -90 and 90");
-      }
+      // Normalize heading to 0-360 range instead of rejecting
+      argsObj.heading_degrees = ((argsObj.heading_degrees % 360) + 360) % 360;
+      // Clamp pitch to valid range instead of rejecting
+      argsObj.pitch_degrees = Math.max(-90, Math.min(90, argsObj.pitch_degrees));
       return true;
     }
 
@@ -282,9 +281,8 @@ export function validateFunctionArgs(functionName: NavigationFunctionName, args:
       if (typeof argsObj.steps !== "number") {
         throw new Error("move_forward requires steps as a number");
       }
-      if (argsObj.steps < 1 || argsObj.steps > 5) {
-        throw new Error("steps must be between 1 and 5");
-      }
+      // Clamp steps to valid range instead of rejecting
+      argsObj.steps = Math.max(1, Math.min(5, Math.round(argsObj.steps)));
       return true;
     }
 
@@ -292,6 +290,8 @@ export function validateFunctionArgs(functionName: NavigationFunctionName, args:
       if (typeof argsObj.location_name !== "string" || argsObj.location_name.trim() === "") {
         throw new Error("teleport requires location_name as a non-empty string");
       }
+      // Trim the location name
+      argsObj.location_name = argsObj.location_name.trim();
       return true;
     }
 
@@ -299,6 +299,8 @@ export function validateFunctionArgs(functionName: NavigationFunctionName, args:
       if (typeof argsObj.object_description !== "string" || argsObj.object_description.trim() === "") {
         throw new Error("look_at requires object_description as a non-empty string");
       }
+      // Trim the description
+      argsObj.object_description = argsObj.object_description.trim();
       return true;
     }
 
@@ -316,7 +318,9 @@ export function validateFunctionArgs(functionName: NavigationFunctionName, args:
     }
 
     default: {
-      throw new Error(`Unknown function: ${functionName}`);
+      // Unknown functions should still be allowed - the executor will handle them
+      console.warn(`[NavigationTools] Unknown function: ${functionName}`);
+      return true;
     }
   }
 }

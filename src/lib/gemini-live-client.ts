@@ -335,6 +335,7 @@ export class GeminiLiveClient {
 
   /**
    * Handles WebSocket close events.
+   * Logs detailed close codes for debugging.
    *
    * @param event - The close event
    */
@@ -342,29 +343,70 @@ export class GeminiLiveClient {
     this.state.isConnected = false;
     this.state.isProcessing = false;
     this.state.isSpeaking = false;
+
+    // Clear session reference immediately to prevent further send attempts
+    this.session = undefined;
+
     this.config.onConnectionChange(false);
-    console.log(`[GeminiLive] Connection closed: ${event.code} - ${event.reason}`);
+
+    // Log detailed close information for debugging
+    const closeReasons: Record<number, string> = {
+      1000: "Normal closure",
+      1001: "Going away",
+      1002: "Protocol error",
+      1003: "Unsupported data",
+      1006: "Abnormal closure (no close frame)",
+      1007: "Invalid frame payload data",
+      1008: "Policy violation",
+      1009: "Message too big",
+      1010: "Missing extension",
+      1011: "Internal server error",
+      1012: "Service restart",
+      1013: "Try again later",
+      1015: "TLS handshake failure"
+    };
+
+    const reasonDescription = closeReasons[event.code] ?? "Unknown reason";
+    console.log(
+      `[GeminiLive] Connection closed: ${event.code} (${reasonDescription})${event.reason ? ` - ${event.reason}` : ""}`
+    );
   }
 
   /**
    * Sends audio data to the Gemini Live API for processing.
+   * Silently drops audio if not connected (prevents race conditions during disconnection).
    *
    * @param audioBuffer - Raw PCM audio data (16-bit, 16kHz, mono)
-   * @throws {Error} If not connected
+   * @returns true if audio was sent, false if dropped due to disconnection
    */
-  async sendAudio(audioBuffer: ArrayBuffer): Promise<void> {
+  async sendAudio(audioBuffer: ArrayBuffer): Promise<boolean> {
+    // Silently drop audio if not connected - this prevents spam errors during disconnection
     if (!this.session || !this.state.isConnected) {
-      throw new Error("Not connected to Gemini Live API");
+      return false;
     }
 
-    const base64Audio = this.arrayBufferToBase64(audioBuffer);
+    try {
+      const base64Audio = this.arrayBufferToBase64(audioBuffer);
 
-    await this.session.sendRealtimeInput({
-      audio: {
-        data: base64Audio,
-        mimeType: "audio/pcm;rate=16000"
+      await this.session.sendRealtimeInput({
+        audio: {
+          data: base64Audio,
+          mimeType: "audio/pcm;rate=16000"
+        }
+      });
+      return true;
+    } catch (error) {
+      // Handle WebSocket errors gracefully - connection may have closed mid-send
+      if (
+        error instanceof Error &&
+        (error.message.includes("CLOSING") || error.message.includes("CLOSED") || error.message.includes("WebSocket"))
+      ) {
+        console.warn("[GeminiLive] Connection closed while sending audio, dropping packet");
+        this.state.isConnected = false;
+        return false;
       }
-    });
+      throw error;
+    }
   }
 
   /**

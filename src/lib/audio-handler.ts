@@ -127,12 +127,13 @@ export class AudioHandler {
 
   /**
    * Requests microphone permission and starts audio capture.
+   * Reuses existing AudioContext if available to prevent constant context creation.
    *
    * @throws {Error} If microphone access is denied or unavailable
    */
   async startCapture(): Promise<void> {
     if (this.isCapturing) {
-      console.warn("[AudioHandler] Already capturing");
+      console.log("[AudioHandler] Already capturing, ignoring start request");
       return;
     }
 

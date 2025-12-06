@@ -280,6 +280,9 @@ export function AnywhereExplorer() {
         onConnectionChange: (connected) => {
           setIsConnected(connected);
           if (!connected) {
+            // Stop audio capture immediately when disconnected
+            audioHandlerRef.current?.stopCapture();
+            audioHandlerRef.current?.stopPlayback();
             setIsListening(false);
             setIsSpeaking(false);
           }
@@ -299,8 +302,12 @@ export function AnywhereExplorer() {
       // Initialize audio handler
       audioHandlerRef.current = new AudioHandler({
         onAudioData: (buffer) => {
+          // Only attempt to send if we think we're connected
+          // sendAudio now handles connection state gracefully
           if (geminiClientRef.current?.isConnected()) {
-            geminiClientRef.current.sendAudio(buffer);
+            geminiClientRef.current.sendAudio(buffer).catch(() => {
+              // Silently ignore send failures - connection may have closed
+            });
           }
         },
         onAudioLevel: (level) => {
@@ -318,9 +325,19 @@ export function AnywhereExplorer() {
         throw new Error("Gemini connection not ready after initialization");
       }
 
+      // Automatically start listening after successful connection
+      try {
+        await audioHandlerRef.current?.startCapture();
+        setIsListening(true);
+        console.log("[Explorer] Microphone started automatically");
+      } catch (micError) {
+        console.warn("[Explorer] Failed to start microphone automatically:", micError);
+        // Don't set error - user can manually enable mic later
+      }
+
       /**
        * Sends an initial greeting to Gemini once the connection is verified.
-       * Guarded to avoid dispatching text when the session is not connected.
+       * Uses a short delay to ensure the model is ready to receive input.
        */
       const sendInitialGreeting = async (): Promise<void> => {
         const client = geminiClientRef.current;
@@ -330,23 +347,24 @@ export function AnywhereExplorer() {
           return;
         }
 
+        // Build a concise greeting that prompts the AI to describe the location
+        const locationDesc = currentAddress || "an unknown location";
+        const greeting = `I just arrived at ${locationDesc}. Please briefly welcome me and tell me what I'm looking at.`;
+
         try {
-          await client.sendText(
-            `Hello! I've just connected. I'm currently at ${currentAddress}. Please give me a brief welcome and describe what I'm seeing.`
-          );
+          await client.sendText(greeting);
+          console.log("[Explorer] Sent initial greeting");
         } catch (greetingError) {
-          console.error("[Explorer] Failed to send greeting:", greetingError);
-          setError(
-            greetingError instanceof Error ? greetingError.message : "Failed to send initial greeting to Gemini"
-          );
+          // Non-fatal - the user can still interact normally
+          console.warn("[Explorer] Failed to send greeting:", greetingError);
         }
       };
 
-      // Send initial greeting after a brief delay once connected
+      // Send initial greeting after a brief delay to allow model to stabilize
       if (currentPosition && currentAddress) {
         setTimeout(() => {
           void sendInitialGreeting();
-        }, 1000);
+        }, 1500);
       }
     } catch (error) {
       console.error("[Explorer] Failed to initialize:", error);
@@ -366,15 +384,30 @@ export function AnywhereExplorer() {
 
   /**
    * Disconnect from Gemini and cleanup.
+   * Stops audio capture first to prevent sending to closed connection.
    */
   const disconnect = useCallback(() => {
-    audioHandlerRef.current?.stopCapture();
-    audioHandlerRef.current?.stopPlayback();
-    geminiClientRef.current?.disconnect();
+    console.log("[Explorer] Disconnecting...");
+
+    // Stop audio capture FIRST to prevent sending to closed WebSocket
+    if (audioHandlerRef.current) {
+      audioHandlerRef.current.stopCapture();
+      audioHandlerRef.current.stopPlayback();
+    }
+
+    // Then close the WebSocket connection
+    if (geminiClientRef.current) {
+      geminiClientRef.current.disconnect();
+    }
+
+    // Update UI state
     setIsConnected(false);
     setIsListening(false);
     setIsSpeaking(false);
-  }, [setIsConnected, setIsListening, setIsSpeaking]);
+    setCurrentTranscript("");
+
+    console.log("[Explorer] Disconnected successfully");
+  }, [setIsConnected, setIsListening, setIsSpeaking, setCurrentTranscript]);
 
   /**
    * Toggle microphone capture.
