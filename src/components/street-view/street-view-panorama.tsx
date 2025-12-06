@@ -38,13 +38,27 @@ export type StreetViewPanoramaProps = {
 };
 
 /**
+ * Result of a moveForward operation.
+ */
+export type MoveForwardResult = {
+  /** Number of steps that were successfully completed */
+  stepsCompleted: number;
+  /** Number of steps originally requested */
+  stepsRequested: number;
+  /** Whether movement was blocked (dead end, no links) */
+  blocked: boolean;
+  /** Optional message explaining partial or failed movement */
+  message?: string;
+};
+
+/**
  * Control API exposed on window.anywhere for AI agent access.
  */
 export type AnywhereControlAPI = {
   /** Smoothly pan the camera to a new heading and pitch */
   panTo: (targetHeading: number, targetPitch: number, duration?: number) => Promise<void>;
-  /** Move forward along the current street */
-  moveForward: (steps?: number) => Promise<void>;
+  /** Move forward along the current street. Returns details about movement success. */
+  moveForward: (steps?: number) => Promise<MoveForwardResult>;
   /** Teleport to a named location */
   teleportTo: (locationName: string) => Promise<void>;
   /** Get the current viewport context */
@@ -193,15 +207,35 @@ export function StreetViewPanorama({
 
         /**
          * Move forward along the street by a number of steps.
+         * Returns a result object indicating how many steps were completed.
+         *
+         * @param steps - Number of steps to move forward (1-5)
+         * @returns MoveForwardResult indicating success/failure details
          */
-        moveForward: async (steps = 1) => {
+        moveForward: async (steps = 1): Promise<MoveForwardResult> => {
           setIsNavigating(true);
 
+          const stepsRequested = Math.min(steps, 5);
+          let stepsCompleted = 0;
+          let blocked = false;
+          let message: string | undefined;
+
           try {
-            for (let i = 0; i < Math.min(steps, 5); i++) {
+            for (let i = 0; i < stepsRequested; i++) {
               const links = panorama.getLinks();
               if (!links || links.length === 0) {
                 console.warn("[StreetView] No links available to move forward");
+                blocked = true;
+                if (stepsCompleted === 0) {
+                  message =
+                    "Cannot move forward: no navigable paths available from this location. " +
+                    "This may be a dead end, or Street View coverage is limited here. " +
+                    "Try turning to face a different direction or teleporting to a nearby location.";
+                } else {
+                  message =
+                    `Reached a dead end after ${stepsCompleted} step${stepsCompleted > 1 ? "s" : ""}. ` +
+                    "No further paths available in this direction.";
+                }
                 break;
               }
 
@@ -234,8 +268,32 @@ export function StreetViewPanorama({
                   // Timeout fallback
                   setTimeout(resolve, 2000);
                 });
+                stepsCompleted++;
+              } else {
+                // No valid link found despite having links array
+                blocked = true;
+                if (stepsCompleted === 0) {
+                  message =
+                    "Cannot move forward: no valid path found in the current direction. " +
+                    "Try turning to face a different direction where a path is visible.";
+                } else {
+                  message = `Moved ${stepsCompleted} step${stepsCompleted > 1 ? "s" : ""} but then reached a point with no clear path forward.`;
+                }
+                break;
               }
             }
+
+            // Set success message if we moved at all
+            if (!message && stepsCompleted > 0) {
+              message = `Successfully moved forward ${stepsCompleted} step${stepsCompleted > 1 ? "s" : ""}.`;
+            }
+
+            return {
+              stepsCompleted,
+              stepsRequested,
+              blocked,
+              message
+            };
           } finally {
             setIsNavigating(false);
           }

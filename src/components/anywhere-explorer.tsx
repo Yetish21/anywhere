@@ -120,11 +120,36 @@ export function AnywhereExplorer() {
 
         case "move_forward": {
           const steps = args.steps as number;
-          await anywhere.moveForward(steps);
-          return {
-            success: true,
-            message: `Moved forward ${steps} step${steps > 1 ? "s" : ""}`
-          };
+          const result = await anywhere.moveForward(steps);
+
+          // Return detailed result so Gemini knows exactly what happened
+          if (result.stepsCompleted === 0) {
+            // Complete failure - no movement at all
+            return {
+              success: false,
+              error: result.message ?? "Failed to move forward",
+              stepsCompleted: 0,
+              stepsRequested: result.stepsRequested,
+              blocked: result.blocked
+            };
+          } else if (result.blocked && result.stepsCompleted < result.stepsRequested) {
+            // Partial success - moved some but not all requested steps
+            return {
+              success: true,
+              partial: true,
+              message: result.message,
+              stepsCompleted: result.stepsCompleted,
+              stepsRequested: result.stepsRequested,
+              blocked: true
+            };
+          } else {
+            // Full success
+            return {
+              success: true,
+              message:
+                result.message ?? `Moved forward ${result.stepsCompleted} step${result.stepsCompleted > 1 ? "s" : ""}`
+            };
+          }
         }
 
         case "teleport": {
