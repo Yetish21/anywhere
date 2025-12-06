@@ -3,6 +3,9 @@
  * These function declarations are passed to the Gemini Live API to enable
  * the AI to control Street View navigation through structured function calls.
  *
+ * Uses the `parametersJsonSchema` format as recommended in the official
+ * @google/genai documentation: https://googleapis.github.io/js-genai/release_docs/index.html
+ *
  * @module navigation-tools
  */
 
@@ -91,7 +94,7 @@ const panCameraDeclaration: FunctionDeclaration = {
   name: "pan_camera",
   description:
     "Smoothly rotate the Street View camera to a new heading and pitch. Use this when the user asks to 'turn', 'look', or 'face' a direction. Also use for looking up, down, left, right, or turning around.",
-  parameters: {
+  parametersJsonSchema: {
     type: "object",
     properties: {
       heading_degrees: {
@@ -117,7 +120,7 @@ const moveForwardDeclaration: FunctionDeclaration = {
   name: "move_forward",
   description:
     "Advance along the current street in the direction the camera is facing. Use when the user says 'go forward', 'keep walking', 'continue', 'move ahead', or 'let's go down the street'. Each step advances roughly 10-20 meters.",
-  parameters: {
+  parametersJsonSchema: {
     type: "object",
     properties: {
       steps: {
@@ -138,7 +141,7 @@ const teleportDeclaration: FunctionDeclaration = {
   name: "teleport",
   description:
     "Instantly travel to a named location anywhere in the world. Use when the user asks to 'go to', 'take me to', 'visit', 'show me', or 'let's explore' a specific place. Works with landmarks, cities, addresses, and points of interest.",
-  parameters: {
+  parametersJsonSchema: {
     type: "object",
     properties: {
       location_name: {
@@ -159,7 +162,7 @@ const lookAtDeclaration: FunctionDeclaration = {
   name: "look_at",
   description:
     "Center the view on a specific object or feature visible in the current scene. Use when the user asks to 'look at', 'focus on', 'show me', or 'what's that' referring to something visible. Requires visual interpretation of the scene.",
-  parameters: {
+  parametersJsonSchema: {
     type: "object",
     properties: {
       object_description: {
@@ -180,7 +183,7 @@ const getLocationInfoDeclaration: FunctionDeclaration = {
   name: "get_location_info",
   description:
     "Search for interesting facts, history, and information about the current location using Google Search. Use when the user asks 'tell me about this place', 'what's the history here', 'any interesting facts', 'what is this building', or generally wants to learn more about where they are.",
-  parameters: {
+  parametersJsonSchema: {
     type: "object",
     properties: {}
   }
@@ -194,7 +197,7 @@ const takeSelfieDeclaration: FunctionDeclaration = {
   name: "take_selfie",
   description:
     "Generate an AI composite image inserting the user into the current Street View scene as a souvenir. Use when the user says 'take a selfie', 'put me in this photo', 'take a picture', 'souvenir photo', or 'I want a photo here'.",
-  parameters: {
+  parametersJsonSchema: {
     type: "object",
     properties: {
       style: {
