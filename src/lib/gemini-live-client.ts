@@ -184,9 +184,7 @@ export class GeminiLiveClient {
             this.handleClose(event);
             if (!isConnectionSettled) {
               rejectReady(
-                new Error(
-                  `Connection closed before ready: ${event.code}${event.reason ? ` - ${event.reason}` : ""}`
-                )
+                new Error(`Connection closed before ready: ${event.code}${event.reason ? ` - ${event.reason}` : ""}`)
               );
             }
           }
