@@ -56,9 +56,7 @@ export async function loadGoogleMaps(config: MapsLoaderConfig): Promise<typeof g
 
   // Validate API key
   if (!config.apiKey || config.apiKey.trim() === "") {
-    throw new Error(
-      "Google Maps API key is required. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment."
-    );
+    throw new Error("Google Maps API key is required. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment.");
   }
 
   // Configure options only once (subsequent calls are ignored by the library)
