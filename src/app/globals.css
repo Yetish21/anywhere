@@ -120,3 +120,123 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================
+   Anywhere Application Custom Styles
+   ============================================ */
+
+/* State Colors */
+:root {
+  /* Listening state - green */
+  --color-listening: oklch(0.723 0.219 142.1);
+  --color-listening-foreground: oklch(0.985 0 0);
+
+  /* Speaking state - purple */
+  --color-speaking: oklch(0.627 0.265 303.9);
+  --color-speaking-foreground: oklch(0.985 0 0);
+
+  /* Navigating state - yellow */
+  --color-navigating: oklch(0.828 0.189 84.429);
+  --color-navigating-foreground: oklch(0.145 0 0);
+
+  /* Error state - red */
+  --color-error: oklch(0.577 0.245 27.325);
+  --color-error-foreground: oklch(0.985 0 0);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(0, 0, 0, 0.6);
+  --glass-bg-light: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 12px;
+}
+
+/* Glassmorphism utility classes */
+@layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-light {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+  }
+}
+
+/* Custom scrollbar for dark theme */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Animations */
+@layer utilities {
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  @keyframes wave {
+    0%,
+    100% {
+      transform: scaleY(0.5);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  .animate-wave {
+    animation: wave 1s ease-in-out infinite;
+  }
+}
+
+/* Street View container overrides */
+.gm-style {
+  /* Remove Google branding from Street View for cleaner look */
+  & > div:last-child {
+    /* Keep attribution visible but style it */
+  }
+}
+
+/* Hide Street View address overlay (we have our own) */
+.gm-iv-address {
+  display: none !important;
+}
+
+/* Style the Street View controls */
+.gm-style-cc {
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.gm-style-cc:hover {
+  opacity: 1;
+}
