@@ -21,6 +21,12 @@ export type SelfieGeneratorConfig = {
 export type SelfieStyle = "polaroid" | "vintage" | "professional" | "fun" | "natural";
 
 /**
+ * Output resolution options for selfie generation.
+ * Nano Banana Pro supports 1K, 2K, and 4K output.
+ */
+export type SelfieResolution = "1k" | "2k" | "4k";
+
+/**
  * Options for generating a selfie composite.
  */
 export type SelfieOptions = {
@@ -34,6 +40,8 @@ export type SelfieOptions = {
   userPhotoMimeType?: string;
   /** MIME type of the background (default: "image/jpeg") */
   backgroundMimeType?: string;
+  /** Output resolution (default: "2k") */
+  resolution?: SelfieResolution;
 };
 
 /**
@@ -172,8 +180,9 @@ export class SelfieGenerator {
 
   /**
    * Generates a selfie composite from a user photo and background image.
+   * Uses Nano Banana Pro (gemini-3-pro-image-preview) as specified in the technical spec.
    *
-   * @param options - Generation options including images and style
+   * @param options - Generation options including images, style, and resolution
    * @returns Promise resolving to the generation result
    */
   async generateSelfie(options: SelfieOptions): Promise<SelfieResult> {
@@ -182,7 +191,8 @@ export class SelfieGenerator {
       backgroundBase64,
       style = "natural",
       userPhotoMimeType = "image/jpeg",
-      backgroundMimeType = "image/jpeg"
+      backgroundMimeType = "image/jpeg",
+      resolution = "2k"
     } = options;
 
     // Validate inputs
@@ -200,12 +210,20 @@ export class SelfieGenerator {
       };
     }
 
-    // Build the complete prompt
-    const prompt = this.buildPrompt(style);
+    // Build the complete prompt with resolution hint
+    const prompt = this.buildPrompt(style, resolution);
 
     try {
+      // Use Nano Banana Pro (gemini-3-pro-image-preview) as specified in the technical spec
+      // This model supports:
+      // - Text-to-image generation
+      // - Image-to-image editing
+      // - Multi-image composition (up to 14 reference images)
+      // - Character consistency (up to 5 people)
+      // - 1K, 2K, 4K resolution output
+      // - Google Search grounding for factual accuracy
       const response = await this.ai.models.generateContent({
-        model: "gemini-2.0-flash-preview-image-generation",
+        model: "gemini-3-pro-image-preview",
         contents: [
           {
             parts: [
@@ -296,17 +314,29 @@ export class SelfieGenerator {
   }
 
   /**
-   * Builds the complete generation prompt including style instructions.
+   * Builds the complete generation prompt including style and resolution instructions.
    *
    * @param style - The desired image style
+   * @param resolution - Output resolution (1k, 2k, or 4k)
    * @returns Complete prompt string
    */
-  private buildPrompt(style: SelfieStyle): string {
+  private buildPrompt(style: SelfieStyle, resolution: SelfieResolution = "2k"): string {
     const styleInstruction = STYLE_INSTRUCTIONS[style] || STYLE_INSTRUCTIONS.natural;
+
+    // Map resolution to approximate pixel dimensions
+    const resolutionMap: Record<SelfieResolution, string> = {
+      "1k": "approximately 1024 pixels on the longer side",
+      "2k": "approximately 2048 pixels on the longer side",
+      "4k": "approximately 4096 pixels on the longer side"
+    };
+
+    const resolutionHint = resolutionMap[resolution];
 
     return `${BASE_PROMPT}
 
 ${styleInstruction}
+
+OUTPUT RESOLUTION: Generate the image at ${resolutionHint} for high-quality output.
 
 The first image contains the person to insert. The second image is the background scene.
 Now, create the composite image following all requirements above.`;

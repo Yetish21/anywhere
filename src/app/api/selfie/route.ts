@@ -1,7 +1,8 @@
 /**
  * API Route: Selfie Generation
  * Server-side handler for generating AI selfie composites.
- * Uses Gemini 3 Pro Image (Nano Banana Pro) for image generation.
+ * Uses Nano Banana Pro (gemini-3-pro-image-preview) for image generation
+ * as specified in the technical specification.
  *
  * This route keeps the API key secure on the server side.
  *
@@ -10,6 +11,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Modality } from "@google/genai";
+
+/**
+ * Output resolution options for selfie generation.
+ */
+type SelfieResolution = "1k" | "2k" | "4k";
 
 /**
  * Request body type for selfie generation.
@@ -25,6 +31,8 @@ type SelfieRequestBody = {
   userPhotoMimeType?: string;
   /** MIME type of the background */
   backgroundMimeType?: string;
+  /** Output resolution (default: "2k") */
+  resolution?: SelfieResolution;
 };
 
 /**
@@ -83,6 +91,15 @@ CRITICAL REQUIREMENTS:
 3. CORRECT SCALE: Position the person as if standing approximately 2-3 meters from the camera.
 4. NATURAL INTEGRATION: The person should appear naturally within the scene with proper shadows and environmental effects.
 5. OUTPUT QUALITY: Generate a high-quality, artifact-free image.`;
+
+/**
+ * Resolution hints for the prompt.
+ */
+const RESOLUTION_HINTS: Record<SelfieResolution, string> = {
+  "1k": "approximately 1024 pixels on the longer side",
+  "2k": "approximately 2048 pixels on the longer side",
+  "4k": "approximately 4096 pixels on the longer side"
+};
 
 /**
  * POST handler for selfie generation.
@@ -153,17 +170,32 @@ export async function POST(request: NextRequest): Promise<NextResponse<SelfieRes
       );
     }
 
-    // Build prompt with style
+    // Build prompt with style and resolution
     const style = body.style || "natural";
+    const resolution = body.resolution || "2k";
     const styleInstruction = STYLE_INSTRUCTIONS[style] || STYLE_INSTRUCTIONS.natural;
-    const prompt = `${BASE_PROMPT}\n${styleInstruction}\n\nThe first image contains the person to insert. The second image is the background scene. Create the composite image.`;
+    const resolutionHint = RESOLUTION_HINTS[resolution] || RESOLUTION_HINTS["2k"];
+    const prompt = `${BASE_PROMPT}
+${styleInstruction}
+
+OUTPUT RESOLUTION: Generate the image at ${resolutionHint} for high-quality output.
+
+The first image contains the person to insert. The second image is the background scene. Create the composite image.`;
 
     // Initialize Gemini client
     const ai = new GoogleGenAI({ apiKey });
 
-    // Generate the composite image
+    // Generate the composite image using Nano Banana Pro (gemini-3-pro-image-preview)
+    // as specified in the technical specification.
+    // This model supports:
+    // - Text-to-image generation
+    // - Image-to-image editing
+    // - Multi-image composition (up to 14 reference images)
+    // - Character consistency (up to 5 people)
+    // - 1K, 2K, 4K resolution output
+    // - Google Search grounding for factual accuracy
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-preview-image-generation",
+      model: "gemini-3-pro-image-preview",
       contents: [
         {
           parts: [
@@ -281,13 +313,15 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     name: "Anywhere Selfie API",
     version: "1.0.0",
+    model: "gemini-3-pro-image-preview (Nano Banana Pro)",
     endpoints: {
       POST: {
-        description: "Generate an AI selfie composite",
+        description: "Generate an AI selfie composite using Nano Banana Pro",
         body: {
           userPhotoBase64: "string (required) - User photo as base64",
           backgroundBase64: "string (required) - Street View background as base64",
           style: "string (optional) - One of: natural, polaroid, vintage, professional, fun",
+          resolution: "string (optional) - One of: 1k, 2k, 4k (default: 2k)",
           userPhotoMimeType: "string (optional) - MIME type of user photo",
           backgroundMimeType: "string (optional) - MIME type of background"
         },

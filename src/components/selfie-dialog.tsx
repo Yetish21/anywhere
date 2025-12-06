@@ -15,8 +15,12 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Upload, Camera, Loader2, Download, X, Sparkles, Check } from "lucide-react";
 import { useStreetViewStore } from "@/stores/street-view-store";
-import { SelfieGenerator, type SelfieStyle } from "@/lib/selfie-generator";
 import { cn } from "@/lib/utils";
+
+/**
+ * Available selfie styles (matches server-side API).
+ */
+type SelfieStyle = "natural" | "polaroid" | "vintage" | "professional" | "fun";
 
 /**
  * Props for the SelfieDialog component.
@@ -76,6 +80,22 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
   } = useStreetViewStore();
 
   /**
+   * Converts a File to base64 string (without data URL prefix).
+   */
+  const fileToBase64 = useCallback(async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  /**
    * Handle file selection from input.
    */
   const handleFileSelect = useCallback(
@@ -96,7 +116,7 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
       }
 
       try {
-        const base64 = await SelfieGenerator.fileToBase64(file);
+        const base64 = await fileToBase64(file);
         setUserPhoto(base64, file.type);
         setError(undefined);
         setGeneratedImage(undefined);
@@ -104,7 +124,7 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
         setError("Failed to read image file");
       }
     },
-    [setUserPhoto]
+    [setUserPhoto, fileToBase64]
   );
 
   /**
@@ -127,23 +147,51 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
   }, [setUserPhoto]);
 
   /**
-   * Generate the selfie composite.
+   * Fetches Street View image and converts to base64.
+   * Uses Google Maps Static Street View API.
+   */
+  const fetchStreetViewBackground = useCallback(
+    async (lat: number, lng: number, heading: number, pitch: number): Promise<string> => {
+      const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (!mapsApiKey) {
+        throw new Error("Google Maps API key not configured");
+      }
+
+      const url = new URL("https://maps.googleapis.com/maps/api/streetview");
+      url.searchParams.set("size", "1920x1080");
+      url.searchParams.set("location", `${lat},${lng}`);
+      url.searchParams.set("heading", heading.toString());
+      url.searchParams.set("pitch", pitch.toString());
+      url.searchParams.set("fov", "90");
+      url.searchParams.set("key", mapsApiKey);
+
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`Failed to fetch Street View image: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          const base64 = dataUrl.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = () => reject(new Error("Failed to convert image to base64"));
+        reader.readAsDataURL(blob);
+      });
+    },
+    []
+  );
+
+  /**
+   * Generate the selfie composite using server-side API.
+   * Routes requests through /api/selfie to keep API keys secure.
    */
   const handleGenerate = useCallback(async () => {
     if (!userPhoto || !currentPosition) {
       setError("Please upload a photo first");
-      return;
-    }
-
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey) {
-      setError("Gemini API key not configured");
-      return;
-    }
-
-    const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!mapsApiKey) {
-      setError("Google Maps API key not configured");
       return;
     }
 
@@ -152,25 +200,31 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
     setError(undefined);
 
     try {
-      const generator = new SelfieGenerator({ apiKey });
-
       // Fetch the Street View background
-      const backgroundBase64 = await generator.fetchStreetViewImage(
+      const backgroundBase64 = await fetchStreetViewBackground(
         currentPosition.lat,
         currentPosition.lng,
         currentPov.heading,
-        currentPov.pitch,
-        mapsApiKey,
-        { width: 1920, height: 1080 }
+        currentPov.pitch
       );
 
-      // Generate the composite
-      const result = await generator.generateSelfie({
-        userPhotoBase64: userPhoto,
-        backgroundBase64,
-        style: selectedStyle,
-        userPhotoMimeType: userPhotoMimeType || "image/jpeg"
+      // Call the server-side API to generate the composite
+      // This keeps the Gemini API key secure on the server
+      const response = await fetch("/api/selfie", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userPhotoBase64: userPhoto,
+          backgroundBase64,
+          style: selectedStyle,
+          userPhotoMimeType: userPhotoMimeType || "image/jpeg",
+          backgroundMimeType: "image/jpeg"
+        })
       });
+
+      const result = await response.json();
 
       if (result.success && result.imageBase64) {
         setGeneratedImage(`data:${result.mimeType};base64,${result.imageBase64}`);
@@ -203,7 +257,8 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
     currentAddress,
     selectedStyle,
     addSelfieImage,
-    setIsGeneratingSelfie
+    setIsGeneratingSelfie,
+    fetchStreetViewBackground
   ]);
 
   /**

@@ -115,9 +115,9 @@ export class GeminiLiveClient {
    */
   async connect(): Promise<void> {
     try {
-      // Use the native audio model for voice interactions
-      // This model supports bidirectional audio streaming
-      const model = "gemini-2.5-flash-preview-native-audio-dialog";
+      // Use the native audio model for voice interactions as specified in the technical spec
+      // Model: gemini-2.5-flash-native-audio-preview-09-2025 supports bidirectional audio streaming
+      const model = "gemini-2.5-flash-native-audio-preview-09-2025";
 
       this.session = await this.ai.live.connect({
         model,

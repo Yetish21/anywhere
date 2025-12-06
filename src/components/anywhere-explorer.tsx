@@ -20,7 +20,7 @@ import { TourHistorySheet } from "@/components/tour-history-sheet";
 import { GeminiLiveClient } from "@/lib/gemini-live-client";
 import { AudioHandler } from "@/lib/audio-handler";
 import { useStreetViewStore } from "@/stores/street-view-store";
-import { navigationFunctions } from "@/lib/navigation-tools";
+import { navigationFunctions, validateFunctionArgs, type NavigationFunctionName } from "@/lib/navigation-tools";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 
 /**
@@ -80,6 +80,7 @@ export function AnywhereExplorer() {
   /**
    * Execute a navigation function called by Gemini.
    * Routes function calls to the window.anywhere control API.
+   * Validates arguments before execution per spec requirements.
    */
   const executeFunctionCall = useCallback(async (name: string, args: Record<string, unknown>): Promise<unknown> => {
     const anywhere = window.anywhere;
@@ -93,6 +94,17 @@ export function AnywhereExplorer() {
     }
 
     console.log(`[Explorer] Executing function: ${name}`, args);
+
+    // Validate arguments before execution
+    try {
+      validateFunctionArgs(name as NavigationFunctionName, args);
+    } catch (validationError) {
+      console.error(`[Explorer] Argument validation failed for ${name}:`, validationError);
+      return {
+        success: false,
+        error: validationError instanceof Error ? validationError.message : "Invalid arguments"
+      };
+    }
 
     try {
       switch (name) {
@@ -125,12 +137,61 @@ export function AnywhereExplorer() {
         }
 
         case "look_at": {
-          // For look_at, we would need vision capabilities
-          // For now, acknowledge the request
-          const objectDescription = args.object_description as string;
+          // Implement look_at by estimating heading based on object description
+          const objectDescription = (args.object_description as string).toLowerCase();
+          const context = anywhere.getContext();
+          const currentHeading = context.pov.heading;
+          const currentPitch = context.pov.pitch;
+
+          // Parse directional hints from the description
+          let targetHeading = currentHeading;
+          let targetPitch = currentPitch;
+
+          // Horizontal direction parsing
+          if (objectDescription.includes("left")) {
+            targetHeading = (currentHeading - 45 + 360) % 360;
+          } else if (objectDescription.includes("right")) {
+            targetHeading = (currentHeading + 45) % 360;
+          } else if (objectDescription.includes("behind") || objectDescription.includes("back")) {
+            targetHeading = (currentHeading + 180) % 360;
+          }
+
+          // Vertical direction parsing
+          if (
+            objectDescription.includes("up") ||
+            objectDescription.includes("sky") ||
+            objectDescription.includes("top") ||
+            objectDescription.includes("roof") ||
+            objectDescription.includes("ceiling") ||
+            objectDescription.includes("steeple") ||
+            objectDescription.includes("tower") ||
+            objectDescription.includes("spire")
+          ) {
+            targetPitch = Math.min(60, currentPitch + 30);
+          } else if (
+            objectDescription.includes("down") ||
+            objectDescription.includes("ground") ||
+            objectDescription.includes("floor") ||
+            objectDescription.includes("street") ||
+            objectDescription.includes("pavement")
+          ) {
+            targetPitch = Math.max(-30, currentPitch - 20);
+          } else if (objectDescription.includes("mountain") || objectDescription.includes("hill")) {
+            targetPitch = Math.min(45, currentPitch + 15);
+          }
+
+          // Far left/right adjustments
+          if (objectDescription.includes("far left")) {
+            targetHeading = (currentHeading - 90 + 360) % 360;
+          } else if (objectDescription.includes("far right")) {
+            targetHeading = (currentHeading + 90) % 360;
+          }
+
+          await anywhere.panTo(targetHeading, targetPitch);
+
           return {
-            success: false,
-            message: `Vision-based look_at for "${objectDescription}" not yet implemented. Please use pan_camera with specific heading/pitch values instead.`
+            success: true,
+            message: `Adjusted view to look at "${args.object_description}". Camera now at heading ${targetHeading.toFixed(0)}°, pitch ${targetPitch.toFixed(0)}°`
           };
         }
 
