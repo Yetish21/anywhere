@@ -89,6 +89,24 @@ export class GeminiLiveClient {
   private pendingFunctionCalls: Map<string, { resolve: (value: unknown) => void }> = new Map();
 
   /**
+   * Accumulated AI response text from streaming fragments.
+   * Reset when a new turn starts or on turn completion.
+   */
+  private accumulatedAiResponse: string = "";
+
+  /**
+   * Accumulated user transcript from streaming speech recognition.
+   * Reset when processing begins on user input.
+   */
+  private accumulatedTranscript: string = "";
+
+  /**
+   * Flag to track if we're in the middle of receiving AI output.
+   * Used to detect turn transitions and reset accumulators appropriately.
+   */
+  private isReceivingAiOutput: boolean = false;
+
+  /**
    * Creates a new GeminiLiveClient instance.
    *
    * @param config - Configuration options for the session
@@ -213,6 +231,7 @@ export class GeminiLiveClient {
 
   /**
    * Handles incoming messages from the Gemini Live API.
+   * Accumulates streaming text fragments to provide a coherent display.
    *
    * @param message - The server message to process
    */
@@ -228,19 +247,25 @@ export class GeminiLiveClient {
     if (message.serverContent) {
       const serverContent = message.serverContent;
 
-      // Check for turn completion
+      // Check for turn completion - reset state for next turn
       if (serverContent.turnComplete) {
         this.state.isProcessing = false;
         this.state.isSpeaking = false;
+        // Reset accumulators and state flags, preparing for next interaction
+        // Note: The final text remains displayed via the last callback emission
+        this.accumulatedAiResponse = "";
+        this.accumulatedTranscript = "";
+        this.isReceivingAiOutput = false;
         this.config.onTurnComplete?.();
       }
 
       // Process model turn parts (text and function calls)
       if (serverContent.modelTurn?.parts) {
         for (const part of serverContent.modelTurn.parts) {
-          // Handle text response
+          // Handle text response - accumulate fragments
           if (part.text) {
-            this.config.onTextResponse(part.text);
+            this.accumulatedAiResponse += part.text;
+            this.config.onTextResponse(this.accumulatedAiResponse);
           }
 
           // Handle inline function calls in model turn
@@ -254,14 +279,43 @@ export class GeminiLiveClient {
         }
       }
 
-      // Handle input transcription (what the user said)
+      // Handle input transcription (what the user said) - accumulate fragments
       if (serverContent.inputTranscription?.text) {
-        this.config.onTranscript?.(serverContent.inputTranscription.text, true);
+        const newText = serverContent.inputTranscription.text;
+
+        // If we were receiving AI output and now getting user input,
+        // this is a new turn - reset AI response accumulator
+        if (this.isReceivingAiOutput) {
+          this.isReceivingAiOutput = false;
+          this.accumulatedAiResponse = "";
+        }
+
+        // Input transcription typically sends incremental updates with full text,
+        // but can also send fragments. We append with space if needed.
+        if (this.accumulatedTranscript && !this.accumulatedTranscript.endsWith(" ") && !newText.startsWith(" ")) {
+          this.accumulatedTranscript += " ";
+        }
+        this.accumulatedTranscript += newText;
+        this.config.onTranscript?.(this.accumulatedTranscript, true);
       }
 
-      // Handle output transcription (what the AI said)
+      // Handle output transcription (what the AI said) - accumulate fragments
       if (serverContent.outputTranscription?.text) {
-        this.config.onTextResponse(serverContent.outputTranscription.text);
+        const newText = serverContent.outputTranscription.text;
+
+        // Mark that we're receiving AI output now
+        // If this is the first AI output after user input, reset transcript
+        if (!this.isReceivingAiOutput) {
+          this.isReceivingAiOutput = true;
+          this.accumulatedTranscript = "";
+        }
+
+        // Output transcription streams word-by-word, accumulate with proper spacing
+        if (this.accumulatedAiResponse && !this.accumulatedAiResponse.endsWith(" ") && !newText.startsWith(" ")) {
+          this.accumulatedAiResponse += " ";
+        }
+        this.accumulatedAiResponse += newText;
+        this.config.onTextResponse(this.accumulatedAiResponse);
       }
     }
 
@@ -487,6 +541,7 @@ ${context.address ? `- Address: ${context.address}` : "- Address: Unknown"}`;
 
   /**
    * Disconnects from the Gemini Live API.
+   * Clears all internal state including text accumulators.
    */
   disconnect(): void {
     if (this.session) {
@@ -500,6 +555,11 @@ ${context.address ? `- Address: ${context.address}` : "- Address: Unknown"}`;
       isSpeaking: false
     };
 
+    // Clear text accumulators and state flags
+    this.accumulatedAiResponse = "";
+    this.accumulatedTranscript = "";
+    this.isReceivingAiOutput = false;
+
     this.pendingFunctionCalls.clear();
     console.log("[GeminiLive] Disconnected");
   }
@@ -507,6 +567,7 @@ ${context.address ? `- Address: ${context.address}` : "- Address: Unknown"}`;
   /**
    * Interrupts the current AI response.
    * Useful when the user starts speaking while the AI is still talking.
+   * Clears accumulated response text to prepare for new interaction.
    */
   async interrupt(): Promise<void> {
     if (!this.session || !this.state.isConnected) {
@@ -516,6 +577,11 @@ ${context.address ? `- Address: ${context.address}` : "- Address: Unknown"}`;
     // Send an empty realtime input to signal interruption
     await this.session.sendRealtimeInput({});
     this.state.isSpeaking = false;
+
+    // Clear accumulators and state flags for new interaction
+    this.accumulatedAiResponse = "";
+    this.accumulatedTranscript = "";
+    this.isReceivingAiOutput = false;
   }
 
   /**
