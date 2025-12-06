@@ -286,15 +286,41 @@ export function AnywhereExplorer() {
         }
       });
 
-      // Connect to Gemini
+      // Connect to Gemini and wait for the ready state before proceeding
       await geminiClientRef.current.connect();
 
-      // Send initial greeting
-      if (currentPosition && currentAddress) {
-        setTimeout(() => {
-          geminiClientRef.current?.sendText(
+      if (!geminiClientRef.current.isConnected()) {
+        throw new Error("Gemini connection not ready after initialization");
+      }
+
+      /**
+       * Sends an initial greeting to Gemini once the connection is verified.
+       * Guarded to avoid dispatching text when the session is not connected.
+       */
+      const sendInitialGreeting = async (): Promise<void> => {
+        const client = geminiClientRef.current;
+
+        if (!client?.isConnected()) {
+          console.warn("[Explorer] Skipping initial greeting: Gemini not connected");
+          return;
+        }
+
+        try {
+          await client.sendText(
             `Hello! I've just connected. I'm currently at ${currentAddress}. Please give me a brief welcome and describe what I'm seeing.`
           );
+        } catch (greetingError) {
+          console.error("[Explorer] Failed to send greeting:", greetingError);
+          setError(
+            greetingError instanceof Error ? greetingError.message : "Failed to send initial greeting to Gemini"
+          );
+        }
+      };
+
+      // Send initial greeting after a brief delay once connected
+      if (currentPosition && currentAddress) {
+        setTimeout(() => {
+          void sendInitialGreeting();
         }, 1000);
       }
     } catch (error) {

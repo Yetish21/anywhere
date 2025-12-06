@@ -110,8 +110,12 @@ export class GeminiLiveClient {
 
   /**
    * Establishes a WebSocket connection to the Gemini Live API.
+   * Waits for the WebSocket open event and fails fast if the connection
+   * does not reach a ready state within the timeout window. This prevents
+   * callers from attempting to stream audio or text before the session is
+   * actually connected.
    *
-   * @throws {Error} If connection fails
+   * @throws {Error} If connection fails or times out
    */
   async connect(): Promise<void> {
     try {
@@ -119,10 +123,44 @@ export class GeminiLiveClient {
       // Model: gemini-2.5-flash-native-audio-preview-09-2025 supports bidirectional audio streaming
       const model = "gemini-2.5-flash-native-audio-preview-09-2025";
 
+      let resolveConnectionReady: (() => void) | undefined;
+      let rejectConnectionReady: ((error: Error) => void) | undefined;
+      let isConnectionSettled = false;
+
+      const resolveReady = (): void => {
+        if (isConnectionSettled) {
+          return;
+        }
+        isConnectionSettled = true;
+        clearTimeout(timeoutId);
+        resolveConnectionReady?.();
+      };
+
+      const rejectReady = (error: Error): void => {
+        if (isConnectionSettled) {
+          return;
+        }
+        isConnectionSettled = true;
+        clearTimeout(timeoutId);
+        rejectConnectionReady?.(error);
+      };
+
+      const timeoutId = setTimeout(() => {
+        rejectReady(new Error("Timed out while waiting for Gemini Live API connection"));
+      }, 10000);
+
+      const connectionReady = new Promise<void>((resolve, reject) => {
+        resolveConnectionReady = resolve;
+        rejectConnectionReady = reject;
+      });
+
       this.session = await this.ai.live.connect({
         model,
         config: {
-          responseModalities: [Modality.AUDIO, Modality.TEXT],
+          // Per Live API docs, only one response modality is allowed per session.
+          // Selecting AUDIO preserves speech output while we rely on
+          // outputAudioTranscription for UI text.
+          responseModalities: [Modality.AUDIO],
           systemInstruction: this.config.systemInstruction,
           tools: [
             { googleSearch: {} }, // Enable search grounding for knowledge retrieval
@@ -133,12 +171,29 @@ export class GeminiLiveClient {
           outputAudioTranscription: {}
         },
         callbacks: {
-          onopen: () => this.handleOpen(),
+          onopen: () => {
+            this.handleOpen();
+            resolveReady();
+          },
           onmessage: (message: LiveServerMessage) => this.handleMessage(message),
-          onerror: (error: ErrorEvent) => this.handleError(error),
-          onclose: (event: CloseEvent) => this.handleClose(event)
+          onerror: (error: ErrorEvent) => {
+            this.handleError(error);
+            rejectReady(new Error(error.message || "WebSocket connection error"));
+          },
+          onclose: (event: CloseEvent) => {
+            this.handleClose(event);
+            if (!isConnectionSettled) {
+              rejectReady(
+                new Error(
+                  `Connection closed before ready: ${event.code}${event.reason ? ` - ${event.reason}` : ""}`
+                )
+              );
+            }
+          }
         }
       });
+
+      await connectionReady;
 
       console.log("[GeminiLive] Connection initiated");
     } catch (error) {
