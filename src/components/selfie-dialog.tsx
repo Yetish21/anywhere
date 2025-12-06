@@ -275,7 +275,7 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5" />
@@ -284,7 +284,8 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
           <DialogDescription>Upload your photo to create an AI-generated souvenir at this location.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="space-y-4 pb-1">
           {/* Photo upload area */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Your Photo</label>
@@ -401,7 +402,8 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
               </>
             )}
           </Button>
-        </div>
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
