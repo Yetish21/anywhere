@@ -275,8 +275,8 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5" />
             Take a Selfie
@@ -284,8 +284,8 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
           <DialogDescription>Upload your photo to create an AI-generated souvenir at this location.</DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-4 pb-1">
+        <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
+          <div className="space-y-4 pb-4">
             {/* Photo upload area */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Your Photo</label>
@@ -334,7 +334,7 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
                       key={style.id}
                       variant={selectedStyle === style.id ? "default" : "outline"}
                       size="sm"
-                      className="flex-shrink-0"
+                      className="shrink-0"
                       onClick={() => setSelectedStyle(style.id)}
                     >
                       {selectedStyle === style.id && <Check className="h-3 w-3 mr-1" />}
