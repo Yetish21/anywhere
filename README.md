@@ -62,7 +62,7 @@ Create souvenir photos with Nano Banana Pro:
 
 ### Prerequisites
 
-- Node.js 18+
+- Latest Node.js at time of last commit (24.x)
 - pnpm (recommended) or npm
 - Google Cloud Platform account
 - Google AI Studio account
@@ -195,29 +195,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ## Deployment
 
-### Vercel (Recommended)
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel --prod
-```
-
-Configure environment variables in Vercel dashboard.
-
-### Docker
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY . .
-RUN npm install -g pnpm && pnpm install
-RUN pnpm build
-EXPOSE 3000
-CMD ["pnpm", "start"]
-```
+Just use Vercel.
 
 ## Known Limitations
 
@@ -227,14 +205,6 @@ CMD ["pnpm", "start"]
 | Live API latency            | Visual feedback during processing    |
 | Image generation quality    | Multiple style options, regeneration |
 | Browser audio compatibility | Tested on Chrome, Firefox, Safari    |
-
-## Contributing
-
-Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) first.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
