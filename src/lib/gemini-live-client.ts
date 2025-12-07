@@ -31,6 +31,8 @@ export type LiveSessionConfig = {
   onTurnComplete?: () => void;
   /** Optional callback when transcription is received */
   onTranscript?: (transcript: string, isFinal: boolean) => void;
+  /** Optional callback when AI thinking state changes (for UI indicator) */
+  onThinkingStateChange?: (isThinking: boolean) => void;
 };
 
 /**
@@ -105,6 +107,84 @@ export class GeminiLiveClient {
    * Used to detect turn transitions and reset accumulators appropriately.
    */
   private isReceivingAiOutput: boolean = false;
+
+  /**
+   * Flag to track if the AI is currently outputting thinking traces.
+   * Used to show a "Thinking..." indicator in the UI.
+   */
+  private isCurrentlyThinking: boolean = false;
+
+  /**
+   * Filters out internal thinking traces and reasoning from AI response text.
+   * The model sometimes vocalizes its internal planning which should not be
+   * displayed to the user. This includes:
+   * - Markdown formatting (headers, bold, code)
+   * - References to internal functions/actions by name
+   * - Meta-commentary about planning and execution
+   *
+   * @param text - Raw text from the AI output transcription
+   * @returns Object with cleaned text and whether thinking was detected
+   */
+  private filterThinkingTraces(text: string): { text: string; isThinking: boolean } {
+    // If text is heavily markdown-formatted, it's likely all thinking
+    const markdownDensity = (text.match(/\*\*|`|##/g) || []).length;
+    if (markdownDensity > 2) {
+      // Strip all markdown and check what's left
+      const stripped = text
+        .replace(/\*\*[^*]+\*\*/g, "")
+        .replace(/`[^`]+`/g, "")
+        .replace(/##.+/g, "")
+        .trim();
+      if (stripped.length < 20) {
+        return { text: "", isThinking: true };
+      }
+    }
+
+    // Sentence-level patterns that indicate internal reasoning
+    // These patterns match entire sentences that should be removed
+    const sentencePatterns = [
+      // Planning statements
+      /\b(my (current|primary) focus (is|shifts to)[^.!?]*[.!?])/gi,
+      /\b(i('ll| will| plan to) (begin|start) by[^.!?]*[.!?])/gi,
+      /\b(this (initial )?phase involves[^.!?]*[.!?])/gi,
+      /\b(i('ve| have) initiated the[^.!?]*[.!?])/gi,
+      /\b(after arrival[^.!?]*[.!?])/gi,
+      /\b(to fulfill the request[^.!?]*[.!?])/gi,
+      /\b(i('ll| will) (then )?transition to[^.!?]*[.!?])/gi,
+      // Meta-references to actions/functions
+      /\b(the `[^`]+` action[^.!?]*[.!?])/gi,
+      /\b(followed by the `[^`]+`[^.!?]*[.!?])/gi,
+      /\b(gathering relevant (location )?data[^.!?]*[.!?])/gi,
+      /\b(creating a comprehensive introduction[^.!?]*[.!?])/gi
+    ];
+
+    let cleaned = text;
+    const originalLength = text.length;
+
+    // Remove markdown formatting
+    cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, "$1"); // Bold to plain
+    cleaned = cleaned.replace(/`([^`]+)`/g, "$1"); // Code to plain
+    cleaned = cleaned.replace(/##\s*/g, ""); // Headers
+
+    // Remove thinking sentences
+    for (const pattern of sentencePatterns) {
+      cleaned = cleaned.replace(pattern, "");
+    }
+
+    // Clean up resulting whitespace
+    cleaned = cleaned.replace(/\s{2,}/g, " ").trim();
+
+    // Determine if this was primarily thinking content
+    // If we removed more than 60% of the content, it was mostly thinking
+    const isThinking = cleaned.length < originalLength * 0.4;
+
+    // If the result is just punctuation or very short, return empty with thinking flag
+    if (cleaned.length < 5 || /^[\s.,!?;:\-]+$/.test(cleaned)) {
+      return { text: "", isThinking: true };
+    }
+
+    return { text: cleaned, isThinking };
+  }
 
   /**
    * Creates a new GeminiLiveClient instance.
@@ -256,6 +336,11 @@ export class GeminiLiveClient {
         this.accumulatedAiResponse = "";
         this.accumulatedTranscript = "";
         this.isReceivingAiOutput = false;
+        // Clear thinking state
+        if (this.isCurrentlyThinking) {
+          this.isCurrentlyThinking = false;
+          this.config.onThinkingStateChange?.(false);
+        }
         this.config.onTurnComplete?.();
       }
 
@@ -265,7 +350,18 @@ export class GeminiLiveClient {
           // Handle text response - accumulate fragments
           if (part.text) {
             this.accumulatedAiResponse += part.text;
-            this.config.onTextResponse(this.accumulatedAiResponse);
+            // Filter out thinking traces before displaying to user
+            const { text: filteredResponse, isThinking } = this.filterThinkingTraces(this.accumulatedAiResponse);
+
+            // Update thinking state and notify UI
+            if (isThinking !== this.isCurrentlyThinking) {
+              this.isCurrentlyThinking = isThinking;
+              this.config.onThinkingStateChange?.(isThinking);
+            }
+
+            if (filteredResponse) {
+              this.config.onTextResponse(filteredResponse);
+            }
           }
 
           // Handle inline function calls in model turn
@@ -315,7 +411,19 @@ export class GeminiLiveClient {
           this.accumulatedAiResponse += " ";
         }
         this.accumulatedAiResponse += newText;
-        this.config.onTextResponse(this.accumulatedAiResponse);
+
+        // Filter out thinking traces before displaying to user
+        const { text: filteredResponse, isThinking } = this.filterThinkingTraces(this.accumulatedAiResponse);
+
+        // Update thinking state and notify UI
+        if (isThinking !== this.isCurrentlyThinking) {
+          this.isCurrentlyThinking = isThinking;
+          this.config.onThinkingStateChange?.(isThinking);
+        }
+
+        if (filteredResponse) {
+          this.config.onTextResponse(filteredResponse);
+        }
       }
     }
 
@@ -559,6 +667,7 @@ ${context.address ? `- Address: ${context.address}` : "- Address: Unknown"}`;
     this.accumulatedAiResponse = "";
     this.accumulatedTranscript = "";
     this.isReceivingAiOutput = false;
+    this.isCurrentlyThinking = false;
 
     this.pendingFunctionCalls.clear();
     console.log("[GeminiLive] Disconnected");
@@ -582,6 +691,11 @@ ${context.address ? `- Address: ${context.address}` : "- Address: Unknown"}`;
     this.accumulatedAiResponse = "";
     this.accumulatedTranscript = "";
     this.isReceivingAiOutput = false;
+    // Clear thinking state
+    if (this.isCurrentlyThinking) {
+      this.isCurrentlyThinking = false;
+      this.config.onThinkingStateChange?.(false);
+    }
   }
 
   /**

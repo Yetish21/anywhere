@@ -65,12 +65,14 @@ export function AnywhereExplorer() {
     isConnected,
     isListening,
     isSpeaking,
+    isThinking,
     isNavigating,
     currentTranscript,
     latestAiResponse,
     setIsConnected,
     setIsListening,
     setIsSpeaking,
+    setIsThinking,
     setCurrentTranscript,
     setLatestAiResponse,
     addCheckpoint,
@@ -296,6 +298,9 @@ export function AnywhereExplorer() {
         },
         onTranscript: (transcript) => {
           setCurrentTranscript(transcript);
+        },
+        onThinkingStateChange: (thinking) => {
+          setIsThinking(thinking);
         }
       });
 
@@ -375,6 +380,7 @@ export function AnywhereExplorer() {
     setIsConnected,
     setIsListening,
     setIsSpeaking,
+    setIsThinking,
     setLatestAiResponse,
     setCurrentTranscript,
     setError,
@@ -404,10 +410,11 @@ export function AnywhereExplorer() {
     setIsConnected(false);
     setIsListening(false);
     setIsSpeaking(false);
+    setIsThinking(false);
     setCurrentTranscript("");
 
     console.log("[Explorer] Disconnected successfully");
-  }, [setIsConnected, setIsListening, setIsSpeaking, setCurrentTranscript]);
+  }, [setIsConnected, setIsListening, setIsSpeaking, setIsThinking, setCurrentTranscript]);
 
   /**
    * Toggle microphone capture.
@@ -529,6 +536,7 @@ export function AnywhereExplorer() {
         isConnected={isConnected}
         isListening={isListening}
         isSpeaking={isSpeaking}
+        isThinking={isThinking}
         isNavigating={isNavigating}
         transcript={currentTranscript}
         aiResponse={latestAiResponse}

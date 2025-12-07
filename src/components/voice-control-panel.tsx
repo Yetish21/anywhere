@@ -29,6 +29,8 @@ export type VoiceControlPanelProps = {
   isListening: boolean;
   /** Whether the AI is currently speaking */
   isSpeaking: boolean;
+  /** Whether the AI is currently in thinking/planning mode */
+  isThinking?: boolean;
   /** Whether navigation is in progress */
   isNavigating?: boolean;
   /** Current user transcript */
@@ -79,6 +81,7 @@ export function VoiceControlPanel({
   isConnected,
   isListening,
   isSpeaking,
+  isThinking = false,
   isNavigating = false,
   transcript = "",
   aiResponse = "",
@@ -213,14 +216,18 @@ export function VoiceControlPanel({
           </div>
 
           {/* Transcript/Response display - expandable with wrapping */}
-          {(transcript || aiResponse) && (
+          {(transcript || aiResponse || isThinking) && (
             <div className="w-full max-h-40 overflow-y-auto px-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
               {transcript && (
                 <p className="text-sm text-white/60 italic mb-1 break-words">
                   <span className="font-medium">You:</span> {transcript}
                 </p>
               )}
-              {aiResponse && <p className="text-sm text-white/90 break-words leading-relaxed">{aiResponse}</p>}
+              {isThinking && !aiResponse ? (
+                <p className="text-sm text-white/60 italic break-words leading-relaxed">Thinking...</p>
+              ) : (
+                aiResponse && <p className="text-sm text-white/90 break-words leading-relaxed">{aiResponse}</p>
+              )}
             </div>
           )}
 

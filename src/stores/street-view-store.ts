@@ -99,6 +99,8 @@ export type StreetViewState = {
   isSpeaking: boolean;
   /** Whether microphone capture is active */
   isListening: boolean;
+  /** Whether the AI is currently in thinking/planning mode */
+  isThinking: boolean;
   /** Current transcription of user speech */
   currentTranscript: string;
   /** Latest AI response text */
@@ -151,6 +153,8 @@ export type StreetViewState = {
   setIsSpeaking: (speaking: boolean) => void;
   /** Sets the listening state */
   setIsListening: (listening: boolean) => void;
+  /** Sets the thinking state */
+  setIsThinking: (thinking: boolean) => void;
   /** Sets the current transcript */
   setCurrentTranscript: (transcript: string) => void;
   /** Sets the latest AI response */
@@ -187,6 +191,7 @@ const initialState: Omit<StreetViewState, keyof StreetViewActions> = {
   isNavigating: false,
   isSpeaking: false,
   isListening: false,
+  isThinking: false,
   currentTranscript: "",
   latestAiResponse: "",
   tourHistory: [],
@@ -209,6 +214,7 @@ type StreetViewActions = {
   setIsNavigating: (navigating: boolean) => void;
   setIsSpeaking: (speaking: boolean) => void;
   setIsListening: (listening: boolean) => void;
+  setIsThinking: (thinking: boolean) => void;
   setCurrentTranscript: (transcript: string) => void;
   setLatestAiResponse: (response: string) => void;
   addCheckpoint: (narration?: string, thumbnail?: string) => void;
@@ -279,6 +285,10 @@ export const useStreetViewStore = create<StreetViewState>()(
 
       setIsListening: (listening) => {
         set({ isListening: listening }, false, "setIsListening");
+      },
+
+      setIsThinking: (thinking) => {
+        set({ isThinking: thinking }, false, "setIsThinking");
       },
 
       setCurrentTranscript: (transcript) => {
