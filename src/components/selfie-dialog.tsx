@@ -275,8 +275,8 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5" />
             Take a Selfie
@@ -284,126 +284,124 @@ export function SelfieDialog({ open, onOpenChange }: SelfieDialogProps) {
           <DialogDescription>Upload your photo to create an AI-generated souvenir at this location.</DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
-          <div className="space-y-4 pb-4">
-            {/* Photo upload area */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Your Photo</label>
+        <div className="space-y-4">
+          {/* Photo upload area */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Your Photo</label>
 
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
 
-              {userPhoto ? (
-                <Card className="relative overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`data:${userPhotoMimeType || "image/jpeg"};base64,${userPhoto}`}
-                    alt="Your photo"
-                    className="w-full h-48 object-cover"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8"
-                    onClick={handleRemovePhoto}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </Card>
-              ) : (
-                <Card
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-2 p-8 cursor-pointer",
-                    "border-dashed hover:bg-muted/50 transition-colors"
-                  )}
-                  onClick={handleUploadClick}
+            {userPhoto ? (
+              <Card className="relative overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`data:${userPhotoMimeType || "image/jpeg"};base64,${userPhoto}`}
+                  alt="Your photo"
+                  className="w-full h-48 object-cover"
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8"
+                  onClick={handleRemovePhoto}
                 >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG up to 4MB</p>
-                </Card>
-              )}
-            </div>
-
-            {/* Style selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Style</label>
-              <ScrollArea className="w-full">
-                <div className="flex gap-2 pb-2">
-                  {SELFIE_STYLES.map((style) => (
-                    <Button
-                      key={style.id}
-                      variant={selectedStyle === style.id ? "default" : "outline"}
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => setSelectedStyle(style.id)}
-                    >
-                      {selectedStyle === style.id && <Check className="h-3 w-3 mr-1" />}
-                      {style.name}
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-              <p className="text-xs text-muted-foreground">
-                {SELFIE_STYLES.find((s) => s.id === selectedStyle)?.description}
-              </p>
-            </div>
-
-            {/* Location info */}
-            {currentAddress && (
-              <div className="rounded-lg bg-muted p-3">
-                <p className="text-xs text-muted-foreground">Current Location</p>
-                <p className="text-sm font-medium truncate">{currentAddress}</p>
-              </div>
+                  <X className="h-4 w-4" />
+                </Button>
+              </Card>
+            ) : (
+              <Card
+                className={cn(
+                  "flex flex-col items-center justify-center gap-2 p-8 cursor-pointer",
+                  "border-dashed hover:bg-muted/50 transition-colors"
+                )}
+                onClick={handleUploadClick}
+              >
+                <Upload className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                <p className="text-xs text-muted-foreground">PNG, JPG up to 4MB</p>
+              </Card>
             )}
-
-            {/* Error message */}
-            {error && (
-              <div className="rounded-lg bg-destructive/10 p-3 text-destructive">
-                <p className="text-sm">{error}</p>
-              </div>
-            )}
-
-            {/* Generated image */}
-            {generatedImage && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary" className="gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    Generated
-                  </Badge>
-                  <Button variant="outline" size="sm" onClick={handleDownload}>
-                    <Download className="h-4 w-4 mr-1" />
-                    Download
-                  </Button>
-                </div>
-
-                <Card className="overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={generatedImage} alt="Generated selfie" className="w-full" />
-                </Card>
-              </div>
-            )}
-
-            {/* Generate button */}
-            <Button
-              className="w-full"
-              onClick={handleGenerate}
-              disabled={!userPhoto || isGenerating || isGeneratingSelfie}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Selfie
-                </>
-              )}
-            </Button>
           </div>
-        </ScrollArea>
+
+          {/* Style selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Style</label>
+            <ScrollArea className="w-full">
+              <div className="flex gap-2 pb-2">
+                {SELFIE_STYLES.map((style) => (
+                  <Button
+                    key={style.id}
+                    variant={selectedStyle === style.id ? "default" : "outline"}
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => setSelectedStyle(style.id)}
+                  >
+                    {selectedStyle === style.id && <Check className="h-3 w-3 mr-1" />}
+                    {style.name}
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
+            <p className="text-xs text-muted-foreground">
+              {SELFIE_STYLES.find((s) => s.id === selectedStyle)?.description}
+            </p>
+          </div>
+
+          {/* Location info */}
+          {currentAddress && (
+            <div className="rounded-lg bg-muted p-3">
+              <p className="text-xs text-muted-foreground">Current Location</p>
+              <p className="text-sm font-medium truncate">{currentAddress}</p>
+            </div>
+          )}
+
+          {/* Error message */}
+          {error && (
+            <div className="rounded-lg bg-destructive/10 p-3 text-destructive">
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Generated image */}
+          {generatedImage && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Badge variant="secondary" className="gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Generated
+                </Badge>
+                <Button variant="outline" size="sm" onClick={handleDownload}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </Button>
+              </div>
+
+              <Card className="overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={generatedImage} alt="Generated selfie" className="w-full" />
+              </Card>
+            </div>
+          )}
+
+          {/* Generate button */}
+          <Button
+            className="w-full"
+            onClick={handleGenerate}
+            disabled={!userPhoto || isGenerating || isGeneratingSelfie}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate Selfie
+              </>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
